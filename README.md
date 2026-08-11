@@ -16,10 +16,6 @@ Gather is an installable, mobile-first shared shopping-list app. Each list has a
 
 The migration adds the required Realtime tables. Run `npm test`, `npm run lint`, and `npm run build` before committing.
 
-## Install on iPhone or iPad
-
-Open Gather in Safari, tap Share, choose **Add to Home Screen**, then tap Add. It opens in standalone app mode. iOS installation is manual; it has no browser install prompt.
-
 ## Raspberry Pi deployment
 
 Copy `.env.example` to an untracked `.env` on the Pi, set real values, and run:
