@@ -1,5 +1,5 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
-import { ensureAnonymousSession, supabase } from './supabase'
+import { requireSession, supabase } from './supabase'
 import type { ShoppingItem, ShoppingList } from '../types'
 
 function client() {
@@ -8,14 +8,14 @@ function client() {
 }
 
 export async function getLists(): Promise<ShoppingList[]> {
-  await ensureAnonymousSession()
+  await requireSession()
   const { data, error } = await client().from('list_members').select('role, shopping_lists(*)').order('created_at', { foreignTable: 'shopping_lists', ascending: false })
   if (error) throw error
   return (data ?? []).map((member) => ({ ...(member.shopping_lists as unknown as Omit<ShoppingList, 'role'>), role: member.role }))
 }
 
 export async function createList(name: string) {
-  await ensureAnonymousSession()
+  await requireSession()
   const { data, error } = await client().rpc('create_shopping_list', { list_name: name.trim() })
   if (error) throw error
   const created = Array.isArray(data) ? data[0] : data
@@ -24,7 +24,7 @@ export async function createList(name: string) {
 }
 
 export async function joinList(inviteToken: string) {
-  await ensureAnonymousSession()
+  await requireSession()
   const { data, error } = await client().rpc('join_list_by_invite', { invite_token: inviteToken })
   if (error) throw error
   return data as string
@@ -76,4 +76,11 @@ export async function deleteList(id: string) {
 
 export function subscribeToList(listId: string, callback: () => void): RealtimeChannel {
   return client().channel(`shopping-list:${listId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_items', filter: `list_id=eq.${listId}` }, callback).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'shopping_lists', filter: `id=eq.${listId}` }, callback).subscribe()
+}
+
+export async function getListInvite(listId: string) {
+  const { data, error } = await client().rpc('get_list_invite', { target_list_id: listId })
+  if (error) throw error
+  if (!data) throw new Error('Only the list owner can share an edit link.')
+  return data as string
 }
