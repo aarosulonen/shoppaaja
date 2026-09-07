@@ -11,11 +11,10 @@ export const supabase = isSupabaseConfigured
   ? createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } })
   : null
 
-export async function ensureAnonymousSession() {
+export async function requireSession() {
   if (!supabase) throw new Error('Supabase is not configured.')
-  const { data } = await supabase.auth.getSession()
-  if (!data.session) {
-    const { error } = await supabase.auth.signInAnonymously()
-    if (error) throw error
-  }
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw error
+  if (!data.session || data.session.user.is_anonymous) throw new Error('Sign in with Google to access your lists.')
+  return data.session
 }
